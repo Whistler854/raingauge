@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Rain Gauge" />
+  <meta name="theme-color" content="#0d1f2d" />
+  <title>Rain Gauge — wildhare.org</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Source+Serif+4:wght@300;400;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d1f2d;
+      --card: #132739;
+      --border: #1e3a4f;
+      --accent: #4ab8dc;
+      --soft: #7fb3c8;
+      --dim: #4a6a7a;
+      --text: #ddeef6;
+      --danger: #a03030;
+    }
+    html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Source Serif 4', Georgia, serif; }
+    button { font-family: inherit; cursor: pointer; }
+    input { font-family: inherit; }
+
+    #app { display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding-bottom: 48px; }
+
+    /* HEADER */
+    .header { width: 100%; max-width: 480px; background: linear-gradient(180deg, #0a1520 0%, #0d1f2d 100%); border-bottom: 1px solid var(--border); padding: 36px 24px 20px; text-align: center; }
+    .header .icon { font-size: 36px; margin-bottom: 4px; }
+    .header h1 { font-family: 'Playfair Display', Georgia, serif; font-size: 26px; font-weight: 700; letter-spacing: 0.04em; color: var(--text); }
+    .header .sub { font-size: 11px; color: var(--soft); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 3px; }
+
+    /* STAT ROW */
+    .stats { width: 100%; max-width: 480px; display: flex; border-bottom: 1px solid var(--border); }
+    .stat { flex: 1; text-align: center; padding: 14px 6px; border-right: 1px solid var(--border); }
+    .stat:last-child { border-right: none; }
+    .stat-val { font-size: 19px; font-weight: 600; color: var(--accent); font-family: 'Playfair Display', serif; }
+    .stat-label { font-size: 10px; color: var(--soft); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 3px; }
+
+    /* DRIVE BAR */
+    .drive-bar { width: 100%; max-width: 480px; background: #0f1e2b; border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+    .drive-icon { font-size: 15px; }
+    .drive-msg { flex: 1; font-size: 12px; color: var(--soft); transition: color 0.3s; }
+    .drive-msg.error { color: #e07070; }
+    .drive-msg.success { color: #70d4a0; }
+    .drive-btn { padding: 6px 13px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; border: none; transition: all 0.2s; }
+    .drive-btn.load { background: transparent; border: 1px solid var(--soft); color: var(--soft); }
+    .drive-btn.save { background: linear-gradient(135deg, #3a9fc0, #2278a0); color: #fff; }
+    .drive-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* NAV */
+    .nav { width: 100%; max-width: 480px; display: flex; border-bottom: 1px solid var(--border); background: #0f1e2b; }
+    .nav-btn { flex: 1; padding: 13px 4px; border: none; background: transparent; color: var(--soft); font-size: 13px; letter-spacing: 0.04em; border-bottom: 2px solid transparent; transition: all 0.2s; }
+    .nav-btn.active { background: var(--card); color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* CONTENT */
+    .content { width: 100%; max-width: 480px; padding: 24px 20px; }
+
+    /* FORM */
+    .form-hint { font-size: 13px; color: var(--soft); margin-bottom: 18px; letter-spacing: 0.06em; }
+    label.field-label { display: block; font-size: 11px; color: var(--soft); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+    .field-label span { color: var(--dim); }
+    input[type=date], input[type=number], input[type=text] {
+      width: 100%; padding: 12px 14px; margin-bottom: 16px;
+      background: #0a1825; border: 1px solid #2a4a62; border-radius: 8px;
+      color: var(--text); font-size: 15px; outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type=number] { font-size: 22px; }
+    input:focus { border-color: var(--accent); }
+    .btn-row { display: flex; gap: 10px; margin-top: 6px; }
+    .btn-primary { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; letter-spacing: 0.06em; background: linear-gradient(135deg, #3a9fc0, #2278a0); color: #fff; transition: all 0.2s; }
+    .btn-primary:disabled { background: #1e3a4f; color: var(--dim); cursor: not-allowed; }
+    .btn-cancel { padding: 15px 18px; background: transparent; border: 1px solid #2a4a62; color: var(--soft); border-radius: 8px; font-size: 13px; }
+
+    /* HISTORY */
+    .history-count { font-size: 11px; color: var(--soft); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 18px; }
+    .empty { text-align: center; color: var(--dim); padding: 48px 0; font-size: 15px; }
+    .entry { background: var(--card); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+    .entry-badge { width: 54px; height: 54px; border-radius: 8px; flex-shrink: 0; background: linear-gradient(135deg, #1a4060, #0d2535); display: flex; align-items: center; justify-content: center; border: 1px solid #2a4a62; }
+    .entry-val { font-size: 15px; font-weight: 700; color: var(--accent); font-family: 'Playfair Display', serif; }
+    .entry-info { flex: 1; min-width: 0; }
+    .entry-date { font-size: 14px; color: var(--text); font-weight: 600; }
+    .entry-note { font-size: 12px; color: var(--soft); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .entry-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-edit { padding: 6px 11px; background: #1a3a52; border: 1px solid #2a4a62; color: var(--soft); border-radius: 6px; font-size: 12px; }
+    .btn-delete { padding: 6px 11px; background: #1a1a2a; border: 1px solid #2a2a4a; color: #6a5a7a; border-radius: 6px; font-size: 12px; transition: all 0.2s; }
+    .btn-delete.confirm { background: #5c1a1a; border-color: var(--danger); color: #ff8888; }
+
+    /* CHART */
+    .section-title { font-size: 11px; letter-spacing: 0.12em; color: var(--soft); text-transform: uppercase; margin-bottom: 14px; }
+    .chart-wrap { display: flex; align-items: flex-end; gap: 8px; height: 90px; margin-bottom: 28px; }
+    .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .chart-val { font-size: 10px; color: #a8d4e6; font-weight: 600; }
+    .chart-bar { width: 100%; background: linear-gradient(180deg, #7ecfef 0%, #3a8fb5 100%); border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.6s ease; }
+    .chart-lbl { font-size: 10px; color: var(--soft); }
+    .highlights { display: flex; flex-direction: column; gap: 10px; }
+    .highlight { background: var(--card); border-radius: 8px; padding: 13px 16px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .highlight-label { font-size: 13px; color: var(--soft); }
+    .highlight-val { font-size: 14px; color: var(--accent); font-weight: 600; font-family: 'Playfair Display', serif; }
+
+    .footer { font-size: 11px; color: #2a4a62; text-align: center; margin-top: 8px; }
+
+    @media (min-width: 520px) {
+      .header { border-radius: 0 0 12px 12px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="icon">🌧️</div>
+    <h1>Rain Gauge</h1>
+    <div class="sub">Daily Reading Log · wildhare.org</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="stat-month">0.00"</div><div class="stat-label">This Month</div></div>
+    <div class="stat"><div class="stat-val" id="stat-year">0.00"</div><div class="stat-label" id="stat-year-label">Year Total</div></div>
+    <div class="stat"><div class="stat-val" id="stat-all">0.00"</div><div class="stat-label">All Time</div></div>
+  </div>
+
+  <div class="drive-bar">
+    <div class="drive-icon">☁️</div>
+    <div class="drive-msg" id="drive-msg">Google Drive backup</div>
+    <button class="drive-btn load" id="btn-load" onclick="loadFromDrive()">Load</button>
+    <button class="drive-btn save" id="btn-save-drive" onclick="saveToDrive()">Save</button>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" id="nav-log" onclick="setView('log')">Log Reading</button>
+    <button class="nav-btn" id="nav-history" onclick="setView('history')">History</button>
+    <button class="nav-btn" id="nav-stats" onclick="setView('stats')">Charts</button>
+  </div>
+
+  <div class="content">
+    <!-- LOG VIEW -->
+    <div id="view-log">
+      <div class="form-hint" id="form-hint">Enter today's reading</div>
+      <label class="field-label">Date</label>
+      <input type="date" id="input-date" />
+      <label class="field-label">Rainfall (inches)</label>
+      <input type="number" id="input-inches" min="0" step="0.01" placeholder="0.00" oninput="updateSaveBtn()" />
+      <label class="field-label">Note <span>(optional)</span></label>
+      <input type="text" id="input-note" placeholder="e.g. heavy storm, light drizzle…" />
+      <div class="btn-row">
+        <button class="btn-primary" id="btn-save" onclick="handleSave()" disabled>Save Reading</button>
+        <button class="btn-cancel" id="btn-cancel" style="display:none" onclick="cancelEdit()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="view-history" style="display:none">
+      <div class="history-count" id="history-count">0 entries recorded</div>
+      <div id="entries-list"></div>
+    </div>
+
+    <!-- STATS VIEW -->
+    <div id="view-stats" style="display:none">
+      <div id="chart-section"></div>
+      <div id="highlights-section"></div>
+    </div>
+  </div>
+
+  <div class="footer">Data saved locally + backed up to Google Drive</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'rain-gauge-readings';
+const DRIVE_FILE = 'rain-gauge-data.json';
+let readings = [];
+let editId = null;
+let currentView = 'log';
+let deleteConfirm = null;
+let deleteTimer = null;
+let driveWorking = false;
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatDate(s) {
+  const [y,m,d] = s.split('-');
+  return new Date(y, m-1, d).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', year:'numeric'});
+}
+
+function load() {
+  try { readings = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { readings = []; }
+  document.getElementById('input-date').value = getTodayStr();
+  document.getElementById('stat-year-label').textContent = getTodayStr().slice(0,4) + ' Total';
+  updateStats();
+}
+
+function save() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(readings)); } catch {}
+}
+
+function updateStats() {
+  const total = readings.reduce((s,r) => s+r.inches, 0);
+  const month = getTodayStr().slice(0,7);
+  const year = getTodayStr().slice(0,4);
+  const monthTotal = readings.filter(r=>r.date.startsWith(month)).reduce((s,r)=>s+r.inches,0);
+  const yearTotal = readings.filter(r=>r.date.startsWith(year)).reduce((s,r)=>s+r.inches,0);
+  document.getElementById('stat-month').textContent = monthTotal.toFixed(2)+'"';
+  document.getElementById('stat-year').textContent = yearTotal.toFixed(2)+'"';
+  document.getElementById('stat-all').textContent = total.toFixed(2)+'"';
+}
+
+function updateSaveBtn() {
+  const v = parseFloat(document.getElementById('input-inches').value);
+  document.getElementById('btn-save').disabled = isNaN(v) || v < 0;
+}
+
+function handleSave() {
+  const val = parseFloat(document.getElementById('input-inches').value);
+  if (isNaN(val) || val < 0) return;
+  const date = document.getElementById('input-date').value;
+  const note = document.getElementById('input-note').value.trim();
+  if (editId) {
+    readings = readings.map(r => r.id === editId ? {...r, date, inches: val, note} : r);
+    editId = null;
+  } else {
+    readings.push({id: Date.now(), date, inches: val, note});
+  }
+  save(); updateStats();
+  document.getElementById('input-inches').value = '';
+  document.getElementById('input-note').value = '';
+  document.getElementById('input-date').value = getTodayStr();
+  document.getElementById('btn-save').textContent = '✓ Saved!';
+  document.getElementById('btn-save').disabled = true;
+  document.getElementById('form-hint').textContent = "Enter today's reading";
+  document.getElementById('btn-cancel').style.display = 'none';
+  setTimeout(() => { document.getElementById('btn-save').textContent = 'Save Reading'; updateSaveBtn(); }, 1800);
+  if (currentView === 'history') renderHistory();
+  if (currentView === 'stats') renderStats();
+}
+
+function cancelEdit() {
+  editId = null;
+  document.getElementById('input-inches').value = '';
+  document.getElementById('input-note').value = '';
+  document.getElementById('input-date').value = getTodayStr();
+  document.getElementById('form-hint').textContent = "Enter today's reading";
+  document.getElementById('btn-save').textContent = 'Save Reading';
+  document.getElementById('btn-cancel').style.display = 'none';
+  updateSaveBtn();
+}
+
+function startEdit(id) {
+  const r = readings.find(x => x.id === id);
+  if (!r) return;
+  editId = id;
+  document.getElementById('input-date').value = r.date;
+  document.getElementById('input-inches').value = r.inches;
+  document.getElementById('input-note').value = r.note || '';
+  document.getElementById('form-hint').textContent = '✏️ Editing entry';
+  document.getElementById('btn-save').textContent = 'Update Entry';
+  document.getElementById('btn-cancel').style.display = '';
+  updateSaveBtn();
+  setView('log');
+}
+
+function startDelete(id) {
+  if (deleteConfirm === id) {
+    readings = readings.filter(r => r.id !== id);
+    save(); updateStats(); renderHistory();
+    deleteConfirm = null;
+    clearTimeout(deleteTimer);
+  } else {
+    deleteConfirm = id;
+    renderHistory();
+    clearTimeout(deleteTimer);
+    deleteTimer = setTimeout(() => { deleteConfirm = null; renderHistory(); }, 3000);
+  }
+}
+
+function setView(v) {
+  currentView = v;
+  ['log','history','stats'].forEach(name => {
+    document.getElementById('view-'+name).style.display = name===v ? '' : 'none';
+    document.getElementById('nav-'+name).classList.toggle('active', name===v);
+  });
+  if (v==='history') renderHistory();
+  if (v==='stats') renderStats();
+}
+
+function renderHistory() {
+  const sorted = [...readings].sort((a,b) => b.date.localeCompare(a.date));
+  const count = sorted.length;
+  document.getElementById('history-count').textContent = count + (count===1?' entry':' entries') + ' recorded';
+  const list = document.getElementById('entries-list');
+  if (!count) { list.innerHTML = '<div class="empty">No readings yet. Start logging!</div>'; return; }
+  list.innerHTML = sorted.map(r => `
+    <div class="entry">
+      <div class="entry-badge"><div class="entry-val">${r.inches.toFixed(2)}"</div></div>
+      <div class="entry-info">
+        <div class="entry-date">${formatDate(r.date)}</div>
+        ${r.note ? `<div class="entry-note">${r.note}</div>` : ''}
+      </div>
+      <div class="entry-actions">
+        <button class="btn-edit" onclick="startEdit(${r.id})">Edit</button>
+        <button class="btn-delete${deleteConfirm===r.id?' confirm':''}" onclick="startDelete(${r.id})">${deleteConfirm===r.id?'Confirm':'✕'}</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderStats() {
+  const chartSec = document.getElementById('chart-section');
+  const highlightSec = document.getElementById('highlights-section');
+  if (!readings.length) {
+    chartSec.innerHTML = '<div class="empty">Log some readings to see your stats.</div>';
+    highlightSec.innerHTML = '';
+    return;
+  }
+  const months = {};
+  readings.forEach(r => { const k=r.date.slice(0,7); months[k]=(months[k]||0)+r.inches; });
+  const entries = Object.entries(months).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6);
+  const maxM = Math.max(...entries.map(([,v])=>v), 0.01);
+  chartSec.innerHTML = `<div class="section-title">Monthly Totals</div>
+    <div class="chart-wrap">${entries.map(([m,t]) => {
+      const lbl = new Date(m+'-02').toLocaleDateString('en-US',{month:'short'});
+      const pct = Math.max((t/maxM)*100, 4);
+      return `<div class="chart-col">
+        <div class="chart-val">${t.toFixed(1)}"</div>
+        <div class="chart-bar" style="height:${pct}%"></div>
+        <div class="chart-lbl">${lbl}</div>
+      </div>`;
+    }).join('')}</div>`;
+  const total = readings.reduce((s,r)=>s+r.inches,0);
+  const wet = [...readings].sort((a,b)=>b.inches-a.inches)[0];
+  const rainy = readings.filter(r=>r.inches>0).length;
+  const avg = rainy ? total/rainy : 0;
+  highlightSec.innerHTML = `<div class="section-title">Highlights</div>
+    <div class="highlights">
+      <div class="highlight"><span class="highlight-label">Wettest Day</span><span class="highlight-val">${wet.inches.toFixed(2)}" · ${formatDate(wet.date)}</span></div>
+      <div class="highlight"><span class="highlight-label">Rainy Days Logged</span><span class="highlight-val">${rainy}</span></div>
+      <div class="highlight"><span class="highlight-label">Avg per Rainy Day</span><span class="highlight-val">${avg.toFixed(2)}"</span></div>
+    </div>`;
+}
+
+function setDriveUI(msg, state) {
+  const el = document.getElementById('drive-msg');
+  el.textContent = msg;
+  el.className = 'drive-msg' + (state==='error'?' error':state==='ok'?' success':'');
+  driveWorking = state === 'busy';
+  document.getElementById('btn-load').disabled = driveWorking;
+  document.getElementById('btn-save-drive').disabled = driveWorking;
+  document.getElementById('btn-save-drive').textContent = state==='busy' ? 'Working…' : 'Save';
+}
+
+async function callClaude(prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      mcp_servers: [{type:'url', url:'https://drivemcp.googleapis.com/mcp/v1', name:'google-drive'}],
+      messages: [{role:'user', content: prompt}]
+    })
+  });
+  return res.json();
+}
+
+async function saveToDrive() {
+  if (driveWorking) return;
+  setDriveUI('Saving to Google Drive…', 'busy');
+  try {
+    const json = JSON.stringify({readings, savedAt: new Date().toISOString()}, null, 2);
+    const prompt = `Create a file in Google Drive named "${DRIVE_FILE}" with this exact JSON content (use contentMimeType application/json and set disableConversionToGoogleType to true):\n\n${json}\n\nIf a file with this name already exists, just create a new one with the same name. Confirm success briefly.`;
+    const data = await callClaude(prompt);
+    const text = (data.content||[]).map(b=>b.text||'').join('');
+    if (data.error) throw new Error(data.error.message || 'API error');
+    setDriveUI('✓ Saved to Google Drive!', 'ok');
+    setTimeout(() => setDriveUI('Google Drive backup', ''), 3000);
+  } catch(e) {
+    setDriveUI('Error: ' + (e.message||'unknown'), 'error');
+    setTimeout(() => setDriveUI('Google Drive backup', ''), 4000);
+  }
+}
+
+async function loadFromDrive() {
+  if (driveWorking) return;
+  setDriveUI('Loading from Google Drive…', 'busy');
+  try {
+    const prompt = `Search Google Drive for a file named "${DRIVE_FILE}". If found, read its full content and return ONLY the raw JSON — no explanation, no markdown, no backticks. If not found, return exactly: NOT_FOUND`;
+    const data = await callClaude(prompt);
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    if (text.includes('NOT_FOUND')) {
+      setDriveUI('No backup found in Google Drive.', 'error');
+      setTimeout(() => setDriveUI('Google Drive backup', ''), 4000);
+      return;
+    }
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Could not parse file');
+    const parsed = JSON.parse(match[0]);
+    if (!Array.isArray(parsed.readings)) throw new Error('Invalid format');
+    readings = parsed.readings;
+    save(); updateStats();
+    if (currentView==='history') renderHistory();
+    if (currentView==='stats') renderStats();
+    setDriveUI(`✓ Loaded ${readings.length} readings!`, 'ok');
+    setTimeout(() => setDriveUI('Google Drive backup', ''), 3000);
+  } catch(e) {
+    setDriveUI('Error: ' + (e.message||'unknown'), 'error');
+    setTimeout(() => setDriveUI('Google Drive backup', ''), 4000);
+  }
+}
+
+load();
+</script>
+</body>
+</html>
